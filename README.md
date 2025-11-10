@@ -1,29 +1,88 @@
 # Zen Stones Website
 
+Website link: https://www.zenstonesridgewood.com/
+
+Demo video: https://www.youtube.com
+
 ## Introduction
 
-- This is a catalog website built with Next.js App Router.
+- This is a catalog website built with **Next.js App Router**.
 - Built and deployed using common practices described in the details section.
 - The core idea was to deliver a scalable website featuring at first only a catalog of products and an admin space to manage products and the product landing page.
+- In the code section I try to list all the functions paths that I found important for you to take a look at and understand better what I came up with to make the logic work.
+- The **main functionalities** are in the hands of the admin, who can create, edit and delete products. Also, the admin can create and edit product types and manage what products are featured in the main page.
+- The **demo video's purpose** is to give insight on how the admin can edit its website products since this is a freelance project and I can’t share sensitive credentials.
 
 ## Details
 
-- ### Main Page:
-  Main page or the product landing page includes a hero with six images for wide screens (4 for smaller displays), 2 main featured items and a section including a collection of different products chosen directly by the admin.
+- **Pages**: this website has 5 main pages including the main, catalog, product, inquiry and admin space pages
+- **Database**: I chose **Neon** as the database platform, using **PostgreSQL** syntax
+- **Deployment**: Used **Vercel** for the production deployment and **GoDaddy** for the domain management.
+- **Image storage**: Implemented image storage using **AWS S3 buckets**.
+- **Authentication**: The auth was implemented by manually generating **JWT tokens** with the **jose** library.
+- **Product filtering**: Uses **URL params** so the root page files can read them and query the database for the desired product details
 
-- ### Catalog Page:
-  This page is where the user can filter whatever it needs to browse the items they want and also be able to click into the details of a product they like.
+## Database structure
+**The tables are**: products, product_images, types and users.  
+I will also represent what each table accepts as a row through the types file in the project.
 
-- ### Product Page:
-  In this page the user will see all the details included in the product and it will be able to also inquiry about it.
+### Products table:
+```ts
+export type Product = {
+  id: string;
+  name: string;
+  category: Category;
+  product_type: string;
+  price: number;
+  material: string[];
+  properties: string[];
+  indicated_for: string[];
+  description: string;
+  rarity: 'Common' | 'Uncommon' | 'Rare' | 'Very Rare' | 'Legendary';
+  weight: string;
+  meaning: string;
+  size: string;
+  featured_material: string;
+  featured_section: boolean;
+  is_collection: boolean;
+}
+```
 
-- ### Inquiry Page:
-  Where the user can inquiry about anything or specially the products if redirect from a product page.
+### Product images table:
+```ts
+export type ProductImage = {
+  id: string;
+  product_id: string; // foreign key
+  url: string;
+  position: number;
+  created_at: string;
+}
+```
 
-- ### Admin Space Page:
-  Where admin can have manage the products, types and the main page.
+### Product type table:
+```ts
+export type productType = {
+  id: string;
+  product_type: string;
+  parent_category: Category;
+  featured_image: string;
+}
+```
 
-## Code (under the hood)
+### Users table:
+```ts
+export type User = {
+  id: string,
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string,
+  admin: boolean,
+}
+```
+
+
+## Code
 
 - ### Inquiry: 
   The first complex logic the user can get in touch with right away is the **inquiry option** which lets them email the store owner about any concern or general inquiry.
@@ -34,11 +93,10 @@
   4. `sendInquiry()` calls the api route `/api/inquiry` with a POST method and sends over  some info from the form with it.
   5. Inside the API route, **Resend** handles the email delivery and receives a React component `InquiryEmail()` as the email content.
 
-  #### Function references:
-  - `InquiryForm()` → `/app/ui/inquiry/InquiryForm.tsx`
-  - `sendInquiry()` → `/app/lib/actions.ts` → line 342
+  #### Important function references:
+  - `sendInquiry()` → `/app/lib/actions.ts`
   - `InquiryEmail` → `app/emails/inquiry.tsx`
-  - `inquirySchema` → `app/lib/schemas.ts` → line 115
+  - `inquirySchema` → `app/lib/schemas.ts`
   <br></br>
   ---
 
@@ -46,16 +104,14 @@
   The login function is only included for the admin in this version which gets it access to the admin space and power to manage the main page, products and types.
 
   1. In the `LoginForm()` component, using server actions, the program calls the `login()` function upon submit.
-  2. **Zod** validates the input fileds through `loginSchema`.
+  2. **Zod** validates the input fields through `loginSchema`.
   3. `login()` will try to fetch user from the database by checking the password and email credentials.
   4. If success in the last step, we create a session for the user with the `createSession()` function using a **JWT token** provided by **jose**.
   5. User gets redirect to the main page.
 
-  #### Function references:
-  - `LoginForm()` → `/app/ui/LoginForm.tsx`
-  - `login()` → `/app/lib/actions.ts` → line 216
-  - `createSession` → `app/lib/session.ts` → line 9
-  - `loginSchema` → `app/lib/schemas.ts` → line 30
+  #### Important function references:
+  - `login()` → `/app/lib/actions.ts`
+  - `createSession` → `app/lib/session.ts`
   <br></br>
   ---
 
@@ -65,38 +121,113 @@
   1. In the `Log()` component, the function `logout()` is called if the admin is logged in.
   2. Then `deleteSession()` is fired deleting the cookie session for the admin.
 
-  #### Function references:
-  - `Log()` → `/app/ui/inquiry/Log.tsx`
-  - `logout()` → `/app/lib/actions.ts` → line 478
-  - `deleteSession()` → `/app/lib/session.ts` → line 23
+  #### Important function references:
+  - `logout()` → `/app/lib/actions.ts`
+  - `deleteSession()` → `/app/lib/session.ts`
   <br></br>
   ---
 
-- ### Product CRUD
+- ### Product CRUD:
   Logic that rules the product management where the admin can create, read, update or delete items.
 
-  ### Creating a product:
+  #### Reading a product:
+    1. Products can be read by the `SearchProduct()` component using the `SearchBarAdmin()` search bar component.
+    2. In there, `handleSearch()` function will populate params to the URL with the admin query.
+    3. Then, `page.tsx` reads the URL, using the params to fetch the products from the database using the `fetchSearchedProducts()` function.
+
+  #### Creating a product:
    1. In the `AddProductForm()` component, using server actions, the program calls the `createProduct()` function upon submit.
-   2. **Zod** validates the input fileds through `productSchema`.
-   3. Calls the **AWS S3** API thorugh the `callS3API()` function to upload the product images to a **S3 bucket**.
+   2. **Zod** validates the input fields through `productSchema`.
+   3. Calls the **AWS S3** API through the `callS3API()` function to upload the product images to a **S3 bucket**.
    4. Inserts all the product information retrieved from the form to the database.
    5. With the returning image url from the S3 API call and the id from the inserted product, the image info is inserted in its own table in the database.
    6. Lastly, the function will update the URL so `FeedbackDialog()` component can display a feedback bubble stating the successful product creation.
 
-  ### Updating a product:
-    1.
+  #### Updating a product:
+    1. First, the app reads the product (as explained in the "Reading a product" section).
+    2. Once the desired product is found, `EditOrDeleteProductCard()` component will render the product card with two options: delete or edit.
+    3. After choosing the edit option, the program redirects the admin to the `/app/edit-product/[id]/page.tsx` route where the id would be filled with the product id.
+    4. In this page, `EditProductForm()` component handles the server action by calling the `editProduct()` function.
+    5. Lastly the server action function will update all info from the product and add any additional image to the database as well.
 
-  ### Deleting a product:
-    1.
+  #### Deleting a product:
+    1. Following the same first steps from updating the product, the user would click the delete button.
+    2. Followed by a security check, the item would be deleted by calling the `deleteProduct()` function fired by `handleDelete()` in the front-end.
+    3. Finally, with `deleteFilesFromS3()` function, the images from **S3** would be deleted. As well as the product row from the products table in the database.
 
-  ### Reading a product:
-    1.
-
-  #### Function references:
-  - `AddProductForm()` → `/app/ui/adminspace/AddProductForm.tsx`
-  - `createProduct()` → `/app/lib/actions.ts` → line 46
-  - `productSchema()` → `/app/lib/schemas.ts` → line 40
-  - `callS3API()` → `/app/lib/actions.ts` → line 567
-  - `FeedbackDialog()` → `/app/ui/adminspace/FeedbackDialog.tsx`
+  #### Important function references:
+  - `createProduct()` → `/app/lib/actions.ts`
+  - `callS3API()` → `/app/lib/actions.ts`
+  - `editProduct()` → `/app/lib/actions.ts`
+  - `deleteFilesFromS3()` → `/app/lib/actions.ts`
   <br></br>
   ---
+
+  ### Type management:
+  A product type is essentially a **sub-category**, so when talking about the jewelry **main category**, every product needs to be under a type, for example: Rings, Necklaces, etc. or if the **main category** is Metaphysical then types should be, for example: Singing Bowls, Obelisks, etc.
+
+  #### Creating a type:
+    1. In the `ManageTypeForm()` component, upon submit the program calls the `createType()` function through server actions.
+    2. In this function, the code saves a featured image for the product type in a **AWS S3 bucket** and inserts all the type info in the database.
+    3. Finally the user is notified if the creation was successful through the `FeedbackDialog()` component.
+
+  #### Deleting a type:
+    1. Upon submit the program calls the  `deleteType()` function through server actions.
+    2. Then, the function will delete the type from the database and its featured image with the `deleteFilesFromS3()` function.
+
+  #### Important function references:
+  - `createType()` → `/app/lib/actions.ts`
+  - `deleteType()` → `/app/lib/actions.ts`
+  - `deleteFilesFromS3()` → `/app/lib/actions.ts`
+  <br></br>
+  ---
+
+  ### Product filtering and sort:
+  In the catalog page is where any user can filter a product and that's done with the **URL params** and **database fetching** to save front-end compute, because if the code fetched all products at once and only then filtered with JS logic, that would become a expensive technical debt if the catalog grows.  
+
+  There are two filter components: `FilterLargeScreen()` for wider screens and `FilterSidebar()` for narrow screens.
+
+  Sorting is done in the frontend with the filtered products in place.
+
+  #### Filtering:
+  1. In the catalog page, there will be a tab with all filtering options: Category, Material, Price, Indications, Properties and Type.
+  2. The `fetchFilteredProducts()` function is the main character to fetch any filtered product in the database. Its SQL query dynamically checks if there are any filter options within the product info, and then retrieves the results to the front-end.
+  3. Catalog's `page.tsx` is ever watching for a param in the URL to find any filter options and feed the `fetchFilteredProducts()` function's parameters.
+  4. If there is no filter, it fetches all products.
+  5. In the filter component, the code also calculates how frequently each filter option appears among products. This is done in the `dbCall()` function, which queries the database while simultaneously updating the front-end state with fresh data.
+   
+   #### Important function references:
+  - `fetchFilteredProducts()` → `/app/lib/data.ts`
+  - `dbCall()` → `/app/ui/catalog/FilterLargeScreen|FilterSideBar.tsx`
+  - `FilterLargeScreen()` → `/app/ui/catalog/CatalogWrapper.tsx`
+  - `FilterSidebar()` → `/app/ui/catalog/CatalogWrapper.tsx`
+  <br></br>
+  ---
+
+  ### Main page management
+  In the main page, the admin is able to feature two special products and add items to a collection field in the bottom of the page, which sells an idea of a featured collection chosen by the business owner.  
+  
+  Before featuring or adding any product to the collection, the items are searched by the `FeaturedSearch()` component.
+
+  #### Featuring a product:
+  1. Once the search is done, the admin can click the "**Select as featured**" button to feature the product.
+  2. This action will call the `featurizeProduct()` function in the back-end which is fired by the `handleFeaturize()` in the front-end.
+  3. `featurizeProduct()` will then toggle the product property `featured_section` to **true** in the database.
+
+  #### Adding a product to the collection:
+  1. After the search is done, the admin can click the "**Add to collection button**" to add the product to the main page collection.
+  2. The `addProductToCollections()` function will be called in the back-end by the `handleCollection()` function in the front-end.
+  3. `addProductToCollections()` will toggle the product property `is_collection` to **true** in the database.
+
+  #### Reading featured and collection products:
+  1. Front-end sections that renders featured products will use the `fetchFeaturedProducts()` function to fetch from the database.
+  2. Now, for the collection products, the `fetchCollectionProducts()` function will be used to fetch from the database.
+  3. Those products will be rendered (using map) from an array of products stored in an `useState()` for either featured or collection products.
+
+  #### Important function references:
+  - `FeaturedSearch()` → `/app/ui/manage-main-page/FeaturedSearch.tsx`
+  - `featurizeProduct()` → `/app/lib/actions.ts`
+  - `addProductToCollections()` → `/app/lib/actions.ts`
+  - `fetchFeaturedProducts()` → `/app/lib/data.ts`
+  - `fetchCollectionProducts()` → `/app/lib/data.ts`
+  
