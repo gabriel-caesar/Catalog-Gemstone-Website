@@ -130,7 +130,7 @@ Demo video: https://www.youtube.com
       ---
       <br></br>
 
-  - ### Product CRUD:  
+  - ### Product CRUD
       Logic that rules the product management where the admin can create, read, update or delete items.
 
       **Reading a product**:
@@ -174,7 +174,7 @@ Demo video: https://www.youtube.com
       ---
       <br></br>
 
-  - ### Type management:
+  - ### Type management
     A product type is essentially a **sub-category**, so when talking about the jewelry **main category**, every product needs to be under a type, for example: Rings, Necklaces, etc. or if the **main category** is Metaphysical then types should be, for example: Singing Bowls, Obelisks, etc.
 
     **Creating a type**:
@@ -195,7 +195,7 @@ Demo video: https://www.youtube.com
     <br></br>
     ---
 
-  - ### Product filtering and sort:
+  - ### Product filtering and sort
       In the catalog page is where any user can filter a product and that's done with the **URL params** and **database fetching** to save front-end compute, because if the code fetched all products at once and only then filtered with JS logic, that would become a expensive technical debt if the catalog grows.  
 
       There are two filter components: `FilterLargeScreen()` for wider screens and `FilterSidebar()` for narrow screens.
