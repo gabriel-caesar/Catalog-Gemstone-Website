@@ -2,7 +2,7 @@
 
 Website link: https://www.zenstonesridgewood.com/
 
-Demo video: https://www.youtube.com
+Demo video: https://youtu.be/uz2ZPBAK0og
 
 ## Introduction
 
